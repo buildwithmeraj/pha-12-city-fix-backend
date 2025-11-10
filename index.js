@@ -24,11 +24,17 @@ async function run() {
   try {
     console.log("Connected to MongoDB Atlas!");
 
+    // category db and collection
     const cat_db = client.db("categoriesDB");
     const categoriesCollection = cat_db.collection("categories");
 
+    // issues db and collection
     const issue_db = client.db("issuesDb");
     const issuesCollection = issue_db.collection("issues");
+
+    // contributions db and collection
+    const contrib_db = client.db("contributionsDB");
+    const contributionsCollection = contrib_db.collection("contributions");
 
     app.get("/categories", async (req, res) => {
       const categories = await categoriesCollection.find({}).toArray();
@@ -37,15 +43,12 @@ async function run() {
 
     app.get("/issues", async (req, res) => {
       try {
-        const issuesCollection = client.db("issuesDB").collection("issues");
         const limit = parseInt(req.query.limit) || 0;
-
         const issues = await issuesCollection
           .find({})
           .sort({ date: -1 })
           .limit(limit)
           .toArray();
-
         res.status(200).json(issues);
       } catch (error) {
         console.error("Error fetching issues:", error);
@@ -61,8 +64,21 @@ async function run() {
     });
 
     app.post("/issues", async (req, res) => {
-      const newCategory = req.body;
-      const result = await issuesCollection.insertOne(newCategory);
+      const newIssue = req.body;
+      const result = await issuesCollection.insertOne(newIssue);
+      res.status(201).json(result);
+    });
+
+    app.get("/contributions/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const contributions = await contributionsCollection.find(query).toArray();
+      res.json(contributions);
+    });
+
+    app.post("/contributions", async (req, res) => {
+      const newContribution = req.body;
+      const result = await contributionsCollection.insertOne(newContribution);
       res.status(201).json(result);
     });
 
