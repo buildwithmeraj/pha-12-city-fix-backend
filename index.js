@@ -2,9 +2,9 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri =
-  "mongodb+srv://buildwithmeraj_db_user:3xGWeKrSs1HYGmEv@cityfixdata.krf4nxz.mongodb.net/?appName=cityfixData";
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri = process.env.mongodb_uri;
 const client = new MongoClient(uri, {
   tls: true,
   serverApi: {
@@ -24,17 +24,32 @@ async function run() {
   try {
     console.log("Connected to MongoDB Atlas!");
 
-    const db = client.db("categoriesDB");
-    const categoriesCollection = db.collection("categories");
+    const cat_db = client.db("categoriesDB");
+    const categoriesCollection = cat_db.collection("categories");
+
+    const issue_db = client.db("issuesDb");
+    const issuesCollection = issue_db.collection("issues");
 
     app.get("/categories", async (req, res) => {
       const categories = await categoriesCollection.find({}).toArray();
       res.json(categories);
     });
 
-    app.post("/categories", async (req, res) => {
+    app.get("/issues", async (req, res) => {
+      const issues = await issuesCollection.find({}).toArray();
+      res.json(issues);
+    });
+
+    app.get("/issue/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const issue = await issuesCollection.findOne(query);
+      res.json(issue);
+    });
+
+    app.post("/issues", async (req, res) => {
       const newCategory = req.body;
-      const result = await categoriesCollection.insertOne(newCategory);
+      const result = await issuesCollection.insertOne(newCategory);
       res.status(201).json(result);
     });
 
