@@ -78,6 +78,24 @@ async function run() {
       res.json(issue);
     });
 
+    app.put("/issue/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const issue = await issuesCollection.updateOne(
+        query,
+        { $set: req.body },
+        { upsert: true }
+      );
+      res.json(issue);
+    });
+
+    app.delete("/issue/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const issue = await issuesCollection.deleteOne(query);
+      res.json(issue);
+    });
+
     app.post("/issues", async (req, res) => {
       const newIssue = req.body;
       const result = await issuesCollection.insertOne(newIssue);
