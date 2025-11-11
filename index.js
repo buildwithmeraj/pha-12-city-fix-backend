@@ -43,12 +43,19 @@ async function run() {
 
     app.get("/issues", async (req, res) => {
       try {
-        const limit = parseInt(req.query.limit) || 0;
+        const { email, limit } = req.query;
+        const parsedLimit = parseInt(limit) || 0;
+        let query = {};
+
+        if (email) {
+          query = { email: email };
+        }
         const issues = await issuesCollection
-          .find({})
+          .find(query)
           .sort({ date: -1 })
-          .limit(limit)
+          .limit(parsedLimit)
           .toArray();
+
         res.status(200).json(issues);
       } catch (error) {
         console.error("Error fetching issues:", error);
