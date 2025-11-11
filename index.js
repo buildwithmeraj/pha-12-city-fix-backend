@@ -43,13 +43,21 @@ async function run() {
 
     app.get("/issues", async (req, res) => {
       try {
-        const { email, limit } = req.query;
+        const { email, limit, category, status } = req.query;
         const parsedLimit = parseInt(limit) || 0;
+
         let query = {};
 
         if (email) {
-          query = { email: email };
+          query.email = email;
         }
+        if (category && category !== "All") {
+          query.category = category;
+        }
+        if (status && status !== "All") {
+          query.status = status;
+        }
+
         const issues = await issuesCollection
           .find(query)
           .sort({ date: -1 })
