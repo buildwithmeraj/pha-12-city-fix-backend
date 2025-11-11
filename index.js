@@ -69,9 +69,17 @@ async function run() {
       res.status(201).json(result);
     });
 
-    app.get("/contributions/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
+    app.get("/contributions", async (req, res) => {
+      const { email, id } = req.query;
+      let query = {};
+
+      if (email) {
+        query = { email: email };
+      } else if (id) {
+        query = { issueId: id };
+      } else {
+        res.status(400).json({ message: "Please provide email or id." });
+      }
       const contributions = await contributionsCollection.find(query).toArray();
       res.json(contributions);
     });
