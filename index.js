@@ -68,6 +68,36 @@ app.get("/", (req, res) => {
   `);
 });
 
+const isValidObjectId = (id) => ObjectId.isValid(id);
+
+const toObjectIdOrNull = (id) => {
+  if (!isValidObjectId(id)) return null;
+  return new ObjectId(id);
+};
+
+const pickIssueUpdateFields = (payload) => {
+  const allowedFields = [
+    "title",
+    "description",
+    "category",
+    "location",
+    "image",
+    "status",
+    "date",
+    "email",
+    "name",
+    "upvotes",
+  ];
+
+  const updateDoc = {};
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(payload, field)) {
+      updateDoc[field] = payload[field];
+    }
+  }
+  return updateDoc;
+};
+
 async function run() {
   try {
     //await client.connect();
@@ -117,9 +147,15 @@ async function run() {
 
     app.get("/issue/:id", async (req, res) => {
       try {
-        const issue = await issuesCollection.findOne({
-          _id: new ObjectId(req.params.id),
-        });
+        const objectId = toObjectIdOrNull(req.params.id);
+        if (!objectId) {
+          return res.status(400).json({ message: "Invalid issue id format" });
+        }
+
+        const issue = await issuesCollection.findOne({ _id: objectId });
+        if (!issue) {
+          return res.status(404).json({ message: "Issue not found" });
+        }
         res.json(issue);
       } catch (error) {
         console.error("Error fetching issue:", error);
@@ -139,11 +175,25 @@ async function run() {
 
     app.put("/issue/:id", async (req, res) => {
       try {
+        const objectId = toObjectIdOrNull(req.params.id);
+        if (!objectId) {
+          return res.status(400).json({ message: "Invalid issue id format" });
+        }
+
+        const safeUpdate = pickIssueUpdateFields(req.body || {});
+        if (Object.keys(safeUpdate).length === 0) {
+          return res.status(400).json({ message: "No valid fields to update" });
+        }
+
         const result = await issuesCollection.updateOne(
-          { _id: new ObjectId(req.params.id) },
-          { $set: req.body },
-          { upsert: true }
+          { _id: objectId },
+          { $set: safeUpdate }
         );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Issue not found" });
+        }
+
         res.json(result);
       } catch (error) {
         console.error("Error updating issue:", error);
@@ -153,9 +203,17 @@ async function run() {
 
     app.delete("/issue/:id", async (req, res) => {
       try {
+        const objectId = toObjectIdOrNull(req.params.id);
+        if (!objectId) {
+          return res.status(400).json({ message: "Invalid issue id format" });
+        }
+
         const result = await issuesCollection.deleteOne({
-          _id: new ObjectId(req.params.id),
+          _id: objectId,
         });
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: "Issue not found" });
+        }
         res.json(result);
       } catch (error) {
         console.error("Error deleting issue:", error);
